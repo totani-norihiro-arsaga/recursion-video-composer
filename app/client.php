@@ -4,30 +4,25 @@ declare(strict_types=1);
 
 require_once 'vendor/autoload.php';
 
-use App\Sockets\ClientConnectionSocket;
+use App\Enums\Methods;
+use App\Requests\RequestMessageGenerator;
+use App\Sockets\ClientSocket;
 
 function main(): void
 {
-    $connectedSocket = new ClientConnectionSocket();
+    $connectedSocket = new ClientSocket();
 
-    echo 'ファイル名を入力してください。'.PHP_EOL;
-    $fileName = trim(fgets(STDIN));
-    $fileHandler = fopen($fileName.".mp4", 'rb');
-    $content = '';
-    while (!feof($fileHandler)) {
-        $content .= fread($fileHandler, 4096);
-    }
-    fclose($fileHandler);
+    echo 'ファイルのパス(拡張子まで)を入力してください。'.PHP_EOL;
+    $filePath = trim(fgets(STDIN));
+    echo 'ファイルへ実施する操作を選択してください。'.PHP_EOL;
+    echo Methods::getChoices();
+    $methodNumber = (int)trim(fgets(STDIN));
     try {
-        $connectedSocket->send($content);
-        $response = $connectedSocket->read();
-        $response === 200
-            ? print '送信に成功しました。'
-            : print '送信に失敗しました。';
-    } catch (Exception $e) {
+        $requestMessage = RequestMessageGenerator::generate($filePath, $methodNumber);
+        var_dump($requestMessage);
+        $connectedSocket->fileSend($requestMessage);
+    }catch(Exception $e){
         echo $e->getMessage();
-    } finally {
-        $connectedSocket->close();
     }
 }
 

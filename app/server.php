@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 require_once 'vendor/autoload.php';
 
-use App\Sockets\ServerConnectionSocket;
+use App\Requests\RpcRequestHandler;
+use App\Sockets\ServerSocket;
 
 function main(): void
 {
-    $socket = new ServerConnectionSocket();
+    $socket = new ServerSocket();
     try {
         $socket->listen();
         echo '接続待ちです。'.PHP_EOL;
@@ -16,16 +17,12 @@ function main(): void
         if ($clientSocket) {
             echo '接続されました。'.PHP_EOL;
         }
-
         $content = $socket->read($clientSocket);
-        $file_handler = fopen(__DIR__.'/../result.mp4', 'wb');
-        fwrite($file_handler, $content);
-
-        $socket->send('200', $clientSocket);
-        echo 'コンテンツを受信しました。'.PHP_EOL;
+        $rcpData = (new RpcRequestHandler($content))->handle();
+        $procedure = \App\Enums\Methods::from($rcpData->getMethodNumber())->getProcedure();
+        $procedure($content->getFilePath(), $content->getMediaType(), $rcpData->getArguments());
     } catch (Exception $e) {
         echo $e->getMessage().PHP_EOL;
-        $socket->send('500', $clientSocket);
     } finally {
         echo 'コネクションを閉じます。'.PHP_EOL;
         $socket->close();
