@@ -6,7 +6,7 @@ namespace App\Rpcs;
 
 use App\Enums\Methods;
 
-class ChangeResolutionFactory implements RpcFactory
+class ChangeRateFactory implements RpcFactory
 {
     public function define(): RpcData
     {

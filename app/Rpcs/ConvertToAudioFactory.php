@@ -6,11 +6,11 @@ namespace App\Rpcs;
 
 use App\Enums\Methods;
 
-class CompressProcessFactory implements RpcFactory
+class ConvertToAudioFactory implements RpcFactory
 {
     public function define(): RpcData
     {
-        $methodNumber = Methods::Compress;
+        $methodNumber = Methods::ChangeResolution;
         $arguments = [];
 
         return new RpcData($methodNumber->value, $arguments);

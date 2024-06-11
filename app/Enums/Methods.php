@@ -7,7 +7,7 @@ namespace App\Enums;
 use App\Rpcs\ChangeResolutionFactory;
 use App\Rpcs\CompressProcessFactory;
 use App\Rpcs\RpcFactory;
-use FFmpeg;
+use App\FFmpegs\FFmpeg;
 
 enum Methods:int
 {
@@ -47,8 +47,11 @@ enum Methods:int
 
     public function getProcedure() {
         return match ($this) {
-            self::Compress => fn($inputFilePath, $mediaType) => FFmpeg::compress($inputFilePath, $mediaType),
-            self::ChangeResolution => fn($inputFilePath, $mediaType, $arguments) => FFmpeg::changeResolution($inputFilePath, $mediaType, ...$arguments),
+            self::Compress => fn($inputFilePath) => FFmpeg::compress($inputFilePath),
+            self::ChangeResolution => fn($inputFilePath, $arguments) => FFmpeg::changeResolution($inputFilePath, ...$arguments),
+            self::ChangeRate => fn($inputFilePath, $arguments) => FFmpeg::changeRate($inputFilePath, ...$arguments),
+            self::ConvertToAudio => fn($inputFilePath, $arguments) => FFmpeg::convertToAudio($inputFilePath),
+            self::GenerateGif => fn($inputFilePath, $arguments) => FFmpeg::generateGif($inputFilePath, ...$arguments),
         };
     }
 }

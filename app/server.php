@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once 'vendor/autoload.php';
 
+use App\Enums\Methods;
 use App\Requests\RpcRequestHandler;
 use App\Sockets\ServerSocket;
 
@@ -19,8 +20,9 @@ function main(): void
         }
         $content = $socket->read($clientSocket);
         $rcpData = (new RpcRequestHandler($content))->handle();
-        $procedure = \App\Enums\Methods::from($rcpData->getMethodNumber())->getProcedure();
-        $procedure($content->getFilePath(), $content->getMediaType(), $rcpData->getArguments());
+        $procedure = Methods::from($rcpData->getMethodNumber())->getProcedure();
+        $outputPath = $procedure($content->getFilePath(), $content->getMediaType(), $rcpData->getArguments());
+        echo $outputPath;
     } catch (Exception $e) {
         echo $e->getMessage().PHP_EOL;
     } finally {

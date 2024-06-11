@@ -12,14 +12,13 @@ function main(): void
 {
     $connectedSocket = new ClientSocket();
 
-    echo 'ファイルのパス(拡張子まで)を入力してください。'.PHP_EOL;
+    echo 'ファイルパス(拡張子まで)を入力してください。'.PHP_EOL;
     $filePath = trim(fgets(STDIN));
     echo 'ファイルへ実施する操作を選択してください。'.PHP_EOL;
     echo Methods::getChoices();
     $methodNumber = (int)trim(fgets(STDIN));
     try {
         $requestMessage = RequestMessageGenerator::generate($filePath, $methodNumber);
-        var_dump($requestMessage);
         $connectedSocket->fileSend($requestMessage);
     }catch(Exception $e){
         echo $e->getMessage();
