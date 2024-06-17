@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
+use App\Rpcs\ChangeRateFactory;
 use App\Rpcs\ChangeResolutionFactory;
 use App\Rpcs\CompressProcessFactory;
+use App\Rpcs\ConvertToAudioFactory;
+use App\Rpcs\GenerateGifFactory;
 use App\Rpcs\RpcFactory;
 use App\FFmpegs\FFmpeg;
 
@@ -32,16 +35,20 @@ enum Methods:int
         $cases = self::cases();
         $choices = '';
         foreach ($cases as $case) {
-            $choices .= printf("%s:%d\n", $case->description(), $case->value);
+            $choices .= sprintf("%s:%d\n", $case->description(), $case->value);
         }
         return $choices;
     }
 
     public function getRcpData(): RpcFactory
     {
+        var_dump($this);
         return match ($this) {
             self::Compress => new CompressProcessFactory(),
             self::ChangeResolution => new ChangeResolutionFactory(),
+            self::ChangeRate => new ChangeRateFactory(),
+            self::ConvertToAudio => new ConvertToAudioFactory(),
+            self::GenerateGif => new GenerateGifFactory(),
         };
     }
 

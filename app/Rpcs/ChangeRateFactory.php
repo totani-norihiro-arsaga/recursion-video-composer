@@ -10,7 +10,7 @@ class ChangeRateFactory implements RpcFactory
 {
     public function define(): RpcData
     {
-        $methodNumber = Methods::ChangeResolution;
+        $methodNumber = Methods::ChangeRate;
 
         echo 'width(px)を指定してください。'.PHP_EOL;
         $width = (int)trim(fgets(STDIN));

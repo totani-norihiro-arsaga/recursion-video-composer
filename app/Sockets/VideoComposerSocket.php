@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Sockets;
 
+use App\Messages\ErrorMessage;
 use Exception;
 use App\Messages\Message;
 use Socket;
@@ -11,11 +12,11 @@ use Socket;
 abstract class VideoComposerSocket
 {
 
-    private const HEADER_LENGTH = 7;
-    private const JSON_SIZE_LENGTH = 2;
-    private const MEDIA_TYPE_SIZE_LENGTH = 1;
-    private const PAYLOAD_SIZE_LENGTH = 4;
-    private const MAX_RECEIVE_DATA_SIZE = 1048576;
+    protected const HEADER_LENGTH = 7;
+    protected const JSON_SIZE_LENGTH = 2;
+    protected const MEDIA_TYPE_SIZE_LENGTH = 1;
+    protected const PAYLOAD_SIZE_LENGTH = 4;
+    protected const MAX_RECEIVE_DATA_SIZE = 1048576;
 
 
     protected Socket $socket;
@@ -24,30 +25,47 @@ abstract class VideoComposerSocket
     public function __construct()
     {
         $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-        $this->tmp_path = __DIR__.'/../../storage/';
+        $this->tmp_path = __DIR__.'/../../storage/tmp/';
     }
 
-    public function read(Socket $clientSocket): Message
+    public function read(Socket $targetSocket = null): Message
     {
+        $socket = is_null($targetSocket)
+            ? $this->socket
+            : $targetSocket;
         echo '受信します。'.PHP_EOL;
         $header = '';
-        $result = socket_recv($clientSocket, $header, self::HEADER_LENGTH, MSG_WAITALL);
+        $result = socket_recv($socket, $header, self::HEADER_LENGTH, MSG_WAITALL);
         if ($result === false) {
-            throw new Exception(socket_strerror(socket_last_error($clientSocket)));
+            throw new Exception('データの受信でエラーが発生しました。', 20);
         }
-
         $jsonSize = unpack('S', substr($header, 0, self::JSON_SIZE_LENGTH))[1];
         $mediaSize = unpack('C', substr($header, self::JSON_SIZE_LENGTH, self::MEDIA_TYPE_SIZE_LENGTH))[1];
         $payloadSize = unpack('N',
             substr($header, self::JSON_SIZE_LENGTH + self::MEDIA_TYPE_SIZE_LENGTH, self::PAYLOAD_SIZE_LENGTH))[1];
-        $jsonContent = socket_read($clientSocket, $jsonSize);
-        $mediaType = socket_read($clientSocket, $mediaSize);
 
-        $filePath = $this->tmp_path.date('d-m-Y-H-i-s').'.'.$mediaType;
+        if($mediaSize === 0 && $payloadSize === 0) {
+            return new ErrorMessage(socket_read($socket, $jsonSize), '', '');
+        }
+
+        $jsonContent = $jsonSize
+            ? socket_read($socket, $jsonSize)
+            : '';
+        $mediaType = $mediaSize
+            ? socket_read($socket, $mediaSize)
+            : '';
+
+        $filePath = $this->tmp_path.date('d-m-Y-H-i-s-v').'.'.$mediaType;
         $fileHandler = fopen($filePath, 'a');
+        if(!$fileHandler) {
+            throw new Exception('何かがおかしいようです。', 21);
+        }
         $receivedPayloadSize = 0;
         while ($payloadSize > $receivedPayloadSize) {
-            $data = socket_read($clientSocket, min(self::MAX_RECEIVE_DATA_SIZE, $payloadSize - $receivedPayloadSize));
+            $data = socket_read($socket, min(self::MAX_RECEIVE_DATA_SIZE, $payloadSize - $receivedPayloadSize));
+            if($data === false) {
+                throw new Exception('データの受信でエラーが発生しました。', 20);
+            }
             fwrite($fileHandler, $data);
             echo 'payload_size:'.$payloadSize.PHP_EOL;
             echo 'received_size:'.$receivedPayloadSize.PHP_EOL;
@@ -57,9 +75,12 @@ abstract class VideoComposerSocket
         return new Message($jsonContent, $mediaType, $filePath);
     }
 
-    public function fileSend(Message $message): true
+    public function sendFile(Message $message, Socket $targetSocket = null): true
     {
-        $fileSize = filesize($message->getFilePath());
+        $socket = is_null($targetSocket)
+            ? $this->socket
+            : $targetSocket;
+        $fileSize = file_exists($message->getFilePath()) ? filesize($message->getFilePath()) : 0;
         $jsonSize = strlen($message->getJson());
         $mediaTypeSize = strlen($message->getMediaType());
         $header = pack('S', $jsonSize).
@@ -70,12 +91,12 @@ abstract class VideoComposerSocket
         $body = $message->getJson().
             $message->getMediaType().
             fread($fileHandler, self::MAX_RECEIVE_DATA_SIZE - ($jsonSize + $mediaTypeSize));
-        if (!socket_write($this->socket, $header.$body, self::HEADER_LENGTH + strlen($body))) {
+        if (!socket_write($socket, $header.$body, self::HEADER_LENGTH + strlen($body))) {
             throw new Exception('メッセージの送信に失敗しました。');
         }
 
         while (!feof($fileHandler)) {
-            if (!socket_write($this->socket, fread($fileHandler, self::MAX_RECEIVE_DATA_SIZE))) {
+            if (!socket_write($socket, fread($fileHandler, self::MAX_RECEIVE_DATA_SIZE))) {
                 throw new Exception('ファイルの転送に失敗しました。');
             }
         }

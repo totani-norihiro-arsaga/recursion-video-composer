@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\FFmpegs;
 
+use DateTimeImmutable;
 use Exception;
 
 class FFmpeg
 {
-    private const OUTPUT_DIR = __DIR__.'/../../storage/outputs/';
+    private const OUTPUT_DIR = __DIR__.'/../../storage/tmp/';
 
     public static function compress($inputFilePath): string
     {
@@ -18,7 +19,7 @@ class FFmpeg
         $resultCode = 0;
         exec("ffmpeg -i {$inputFilePath} -crf 20 {$outputFilePath}", $outputLines, $resultCode);
         if(!$resultCode === 0) {
-            throw new Exception('圧縮に失敗しました。');
+            throw new Exception('圧縮に失敗しました。', 30);
         }
         return $outputFilePath;
     }
@@ -30,7 +31,7 @@ class FFmpeg
         $resultCode = 0;
         exec("ffmpeg -i {$inputFilePath} -s {$width}x{$height} {$outputFilePath}", $outputLines, $resultCode);
         if(! $resultCode === 0) {
-            throw new Exception('解像度の変更に失敗しました。');
+            throw new Exception('解像度の変更に失敗しました。', 30);
         }
         return $outputFilePath;
     }
@@ -42,7 +43,7 @@ class FFmpeg
         $resultCode = 0;
         exec("ffmpeg -i {$inputFilePath} -aspect {$numerator}:{$denominator} {$outputFilePath}", $outputLines, $resultCode);
         if(! $resultCode === 0) {
-            throw new Exception('アスペクト比の変更に失敗しました。');
+            throw new Exception('アスペクト比の変更に失敗しました。', 30);
         }
         return $outputFilePath;
     }
@@ -53,24 +54,24 @@ class FFmpeg
         $resultCode = 0;
         exec("ffmpeg -i {$inputFilePath} {$outputFilePath}", $outputLines, $resultCode);
         if(! $resultCode === 0) {
-            throw new Exception('解像度の変更に失敗しました。');
+            throw new Exception('解像度の変更に失敗しました。', 30);
         }
         return $outputFilePath;
     }
-    public static function generateGif($inputFilePath, $start, $end): string
+    public static function generateGif($inputFilePath, $start, $duration): string
     {
         $outputFilePath = self::makeOutPutPath('gif');
         $outputLines = [];
         $resultCode = 0;
-        exec("ffmpeg -i {$inputFilePath} -ss {$start} -t {$end} -c copy {$outputFilePath}", $outputLines, $resultCode);
+        exec("ffmpeg -i {$inputFilePath} -ss {$start} -t {$duration} -vf \"fps=10,scale=320:-1:flags=lanczos\" {$outputFilePath}", $outputLines, $resultCode);
         if(! $resultCode === 0) {
-            throw new Exception('gifの生成に失敗しました。');
+            throw new Exception('gifの生成に失敗しました。', 30);
         }
         return $outputFilePath;
     }
 
     private static function makeOutPutPath($mediaType): string
     {
-        return sprintf('%s%s.%s', self::OUTPUT_DIR,date('d-m-Y-H-i-s'),$mediaType);
+        return sprintf('%s%s.%s', self::OUTPUT_DIR,(new DateTimeImmutable())->format('Y-m-d-H-i-s-u'),$mediaType);
     }
 }

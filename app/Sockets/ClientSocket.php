@@ -13,6 +13,7 @@ class ClientSocket extends VideoComposerSocket
     public function __construct()
     {
         parent::__construct();
+        socket_set_option($this->socket, SOL_SOCKET, SO_RCVTIMEO, ['sec' => 60, 'usec' => 0]);
         if(!socket_connect($this->socket, self::SERVER_ADDRESS, self::SERVER_PORT)) {
             echo socket_strerror(socket_last_error($this->socket));
             throw new Exception('ソケットの接続でエラーが発生しました。');

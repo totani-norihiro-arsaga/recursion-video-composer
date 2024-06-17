@@ -10,7 +10,7 @@ class ConvertToAudioFactory implements RpcFactory
 {
     public function define(): RpcData
     {
-        $methodNumber = Methods::ChangeResolution;
+        $methodNumber = Methods::ConvertToAudio;
         $arguments = [];
 
         return new RpcData($methodNumber->value, $arguments);

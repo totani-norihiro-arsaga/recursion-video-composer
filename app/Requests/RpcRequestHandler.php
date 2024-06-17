@@ -17,10 +17,10 @@ class RpcRequestHandler
 
     public function handle(): RpcData
     {
-        $request = json_decode($this->requestMessage->getJson());
-        if(!isset($request->method) && isset($request->arguments)) {
+        $request = json_decode($this->requestMessage->getJson(),true);
+        if(!isset($request['method']) && isset($request['arguments'])) {
             throw new \Exception('画像処理のリクエストでは無いようです');
         }
-        return new RpcData($request->method, $request->arguments);
+        return new RpcData($request['method'], $request['arguments']);
     }
 }
