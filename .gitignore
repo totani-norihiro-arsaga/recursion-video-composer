@@ -1,5 +1,2 @@
 vendor/
-storage/
-composer.lock
-app/sample.mp4
 .DS_Store
